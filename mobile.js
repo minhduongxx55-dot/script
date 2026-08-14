@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Zefoy OXY Suite v0.0.31 (fix comments countdown)
+// @name         Zefoy OXY Suite v0.0.31 (fix comments countdown + mobile optimized)
 // @namespace    http://tampermonkey.net/
 // @version      0.0.31
-// @description  Sửa Buff Comments Hearts: ưu tiên countdown, bắt .views-countdown
+// @description  Sửa Buff Comments Hearts: ưu tiên countdown, bắt .views-countdown. Tối ưu cho mobile.
 // @author       OXY
 // @match        *://zefoy.com/*
 // @require      https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js
@@ -15,7 +15,7 @@
     'use strict';
 
     // =============================================
-    // 1. CẤU HÌNH & BIẾN TOÀN CỤC
+    // 1. CẤU HÌNH & BIẾN TOÀN CỤC (giữ nguyên)
     // =============================================
     const CONFIG = {
         MAX_ATTEMPTS: 3,
@@ -57,7 +57,7 @@
     };
 
     // =============================================
-    // 2. LOG
+    // 2. LOG (giữ nguyên)
     // =============================================
     function log(msg, type = 'info') {
         const time = new Date().toLocaleTimeString();
@@ -1058,7 +1058,7 @@
     }
 
     // =============================================
-    // 7. BUFF COMMENTS HEARTS – SỬA COUNTDOWN
+    // 7. BUFF COMMENTS HEARTS – SỬA COUNTDOWN (giữ nguyên)
     // =============================================
     function checkCheartsStatus() {
         const cheartsCard = document.querySelector('.t-chearts-button')?.closest('.card');
@@ -1077,7 +1077,6 @@
         }
     }
 
-    // Hàm chuẩn hóa username
     function normalizeUsername(value) {
         return String(value ?? '')
             .normalize('NFKC')
@@ -1086,7 +1085,6 @@
             .toLowerCase();
     }
 
-    // Hàm tìm comment theo username (đã sửa)
     function findCommentByUsername(cheartsRoot, username) {
         if (!cheartsRoot || !username) return null;
 
@@ -1098,7 +1096,6 @@
             if (!usernameEl) continue;
 
             const commentUsername = normalizeUsername(usernameEl.textContent);
-            // Log debug để xác nhận so sánh
             log(
                 `🔍 So sánh username: DOM="${commentUsername}", target="${targetUsername}"`,
                 'debug'
@@ -1112,7 +1109,6 @@
         return null;
     }
 
-    // Hàm lấy countdown hiển thị (ưu tiên countdown đang hiển thị)
     function getCheartsCountdown(cheartsRoot) {
         const el = cheartsRoot?.querySelector(
             '.views-countdown, .hearts-countdown, #login-countdown'
@@ -1129,7 +1125,6 @@
         return visible ? el : null;
     }
 
-    // Sửa thứ tự kiểm tra trạng thái: ưu tiên countdown hiển thị
     function getCheartsState(cheartsRoot) {
         if (!cheartsRoot) return 'unknown';
 
@@ -1141,7 +1136,6 @@
             }
         }
 
-        // Countdown phải được ưu tiên hơn nội dung cũ
         const countdown = getCheartsCountdown(cheartsRoot);
         if (countdown) {
             const text = countdown.textContent.trim();
@@ -1343,7 +1337,6 @@
             const commentForm = findCommentByUsername(cheartsRoot, username);
             if (!commentForm) {
                 log(`❌ Không tìm thấy comment của username: "${username}"`, 'error');
-                // Liệt kê username trong list để debug
                 const items = cheartsRoot.querySelectorAll('ul.list-group li.list-group-item');
                 const usernames = [];
                 for (let item of items) {
@@ -1464,7 +1457,6 @@
             while (!state.cheartsStop) {
                 log(`📌 Lần ${state.cheartsPhase} - Lặp`, 'info');
 
-                // Kiểm tra countdown trước khi bắt đầu lặp
                 const cheartsRoot = document.querySelector('.t-chearts-menu');
                 if (cheartsRoot) {
                     const countdown = getCheartsCountdown(cheartsRoot);
@@ -1506,7 +1498,7 @@
     }
 
     // =============================================
-    // 8. GIAO DIỆN UI
+    // 8. GIAO DIỆN UI (đã thêm CSS responsive)
     // =============================================
     function injectRainbowCSS() {
         const style = document.createElement('style');
@@ -1776,6 +1768,61 @@
                 display: inline-block;
                 padding: 0 6px;
             }
+
+            /* ========== RESPONSIVE CHO MOBILE ========== */
+            @media (max-width: 600px) {
+                .oxy-card {
+                    padding: 8px !important;
+                    margin-top: 6px !important;
+                }
+                .oxy-tiktok-input {
+                    font-size: 16px !important; /* tránh zoom trên iOS */
+                    padding: 10px 12px !important;
+                }
+                .oxy-buff-btn, .oxy-buff-stop-btn {
+                    font-size: 14px !important;
+                    padding: 10px 16px !important;
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                }
+                .oxy-flex {
+                    flex-direction: column !important;
+                    align-items: stretch !important;
+                    gap: 6px !important;
+                }
+                .oxy-chearts-input, .oxy-fav-limit, .oxy-chearts-limit {
+                    width: 100% !important;
+                    box-sizing: border-box !important;
+                }
+                #oxy-dashboard-log {
+                    max-height: 120px !important;
+                    font-size: 11px !important;
+                }
+                .oxy-dashboard-title {
+                    font-size: 14px !important;
+                }
+                .oxy-polling-controls {
+                    font-size: 12px !important;
+                    flex-wrap: wrap !important;
+                }
+                .oxy-card-title {
+                    font-size: 14px !important;
+                }
+                .oxy-footer {
+                    font-size: 14px !important;
+                }
+                .oxy-rainbow-bg {
+                    padding: 8px !important;
+                }
+                .oxy-buff-status {
+                    font-size: 12px !important;
+                    margin-left: 0 !important;
+                }
+                #oxy-toggle-polling {
+                    padding: 4px 12px !important;
+                    font-size: 12px !important;
+                }
+            }
         `;
         document.head.appendChild(style);
     }
@@ -1923,7 +1970,7 @@
     }
 
     // =============================================
-    // 9. MODIFY NAV
+    // 9. MODIFY NAV (giữ nguyên)
     // =============================================
     function modifyNav() {
         const termsLi = document.querySelector('li.nav-item a[data-target="#TermsModal"]')?.closest('li');
