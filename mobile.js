@@ -15,7 +15,22 @@
     'use strict';
 
     // =============================================
-    // 1. CẤU HÌNH & BIẾN TOÀN CỤC (giữ nguyên)
+    // BỔ SUNG: ĐẢM BẢO TESSERACT ĐƯỢC TẢI (cho trường hợp fetch động)
+    // =============================================
+    async function ensureTesseractLoaded() {
+        if (typeof Tesseract !== 'undefined') return true;
+        console.log('[OXY] Đang tải Tesseract...');
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js';
+            script.onload = () => { console.log('[OXY] Tesseract đã tải xong'); resolve(true); };
+            script.onerror = () => reject(new Error('Tải Tesseract thất bại'));
+            document.head.appendChild(script);
+        });
+    }
+
+    // =============================================
+    // 1. CẤU HÌNH & BIẾN TOÀN CỤC
     // =============================================
     const CONFIG = {
         MAX_ATTEMPTS: 3,
@@ -57,7 +72,7 @@
     };
 
     // =============================================
-    // 2. LOG (giữ nguyên)
+    // 2. LOG
     // =============================================
     function log(msg, type = 'info') {
         const time = new Date().toLocaleTimeString();
@@ -86,7 +101,7 @@
     }
 
     // =============================================
-    // 3. CAPTCHA + OCR (giữ nguyên)
+    // 3. CAPTCHA + OCR (đã thêm ensureTesseractLoaded)
     // =============================================
     function getElements() {
         const img = document.getElementById('captcha-img');
@@ -117,6 +132,9 @@
 
     async function ocrImage(imgElement) {
         try {
+            // ĐẢM BẢO TESSERACT ĐÃ TẢI
+            await ensureTesseractLoaded();
+
             const pngData = imageToPngDataUrl(imgElement);
             log(`📸 PNG data length=${pngData.length}`, 'debug');
             log('🔍 Đang OCR...', 'info');
@@ -349,7 +367,7 @@
     }
 
     // =============================================
-    // 4. TIKTOK INSPECTOR (giữ nguyên)
+    // 4. TIKTOK INSPECTOR
     // =============================================
     function isValidTikTokUrl(url) {
         if (!url || typeof url !== 'string') return false;
@@ -570,7 +588,7 @@
     }
 
     // =============================================
-    // 5. BUFF VIEWS (giữ nguyên)
+    // 5. BUFF VIEWS
     // =============================================
     function checkBuffStatus() {
         const viewsCard = document.querySelector('.t-views-button')?.closest('.card');
@@ -766,7 +784,7 @@
     }
 
     // =============================================
-    // 6. BUFF FAVORITES (giữ nguyên)
+    // 6. BUFF FAVORITES
     // =============================================
     function checkFavStatus() {
         const favCard = document.querySelector('.t-favorites-button')?.closest('.card');
@@ -1058,7 +1076,7 @@
     }
 
     // =============================================
-    // 7. BUFF COMMENTS HEARTS – SỬA COUNTDOWN (giữ nguyên)
+    // 7. BUFF COMMENTS HEARTS – SỬA COUNTDOWN
     // =============================================
     function checkCheartsStatus() {
         const cheartsCard = document.querySelector('.t-chearts-button')?.closest('.card');
@@ -1498,7 +1516,7 @@
     }
 
     // =============================================
-    // 8. GIAO DIỆN UI (đã thêm CSS responsive)
+    // 8. GIAO DIỆN UI (có fallback target)
     // =============================================
     function injectRainbowCSS() {
         const style = document.createElement('style');
@@ -1776,7 +1794,7 @@
                     margin-top: 6px !important;
                 }
                 .oxy-tiktok-input {
-                    font-size: 16px !important; /* tránh zoom trên iOS */
+                    font-size: 16px !important;
                     padding: 10px 12px !important;
                 }
                 .oxy-buff-btn, .oxy-buff-stop-btn {
@@ -1845,16 +1863,21 @@
     function modifyUI() {
         log('🎨 Đang tạo giao diện mới...', 'info');
 
-        const targetDiv = document.querySelector('div.col-sm-12.mt-1.h6');
+        // Tìm target, nếu không có thì tạo mới trong body
+        let targetDiv = document.querySelector('div.col-sm-12.mt-1.h6');
         if (!targetDiv) {
-            log('⚠️ Không tìm thấy div target', 'warn');
-            return;
+            log('⚠️ Không tìm thấy div target, tạo mới trong body', 'warn');
+            targetDiv = document.createElement('div');
+            targetDiv.className = 'col-sm-12 mt-1 h6';
+            document.body.appendChild(targetDiv);
         }
+
+        // Xóa nội dung cũ
+        targetDiv.innerHTML = '';
 
         const container = document.createElement('div');
         container.id = 'oxy-dashboard-container';
         container.className = 'oxy-rainbow-bg';
-
         container.innerHTML = `
             <div class="oxy-dashboard-title">
                 <span>🔥 OXY DASHBOARD <span style="font-size:12px;color:#aaa;">v0.0.31</span></span>
@@ -1921,7 +1944,6 @@
             </div>
         `;
 
-        targetDiv.innerHTML = '';
         targetDiv.appendChild(container);
         state.dashboardReady = true;
 
@@ -1951,18 +1973,24 @@
         setInterval(() => {
             if (!state.buffRunning) {
                 const st = checkBuffStatus();
-                document.getElementById('oxy-buff-status').innerHTML = `Trạng thái: ${st.message}`;
-                document.getElementById('oxy-buff-start').disabled = (st.status === 'locked');
+                const el = document.getElementById('oxy-buff-status');
+                if (el) el.innerHTML = `Trạng thái: ${st.message}`;
+                const btn = document.getElementById('oxy-buff-start');
+                if (btn) btn.disabled = (st.status === 'locked');
             }
             if (!state.favRunning) {
                 const st = checkFavStatus();
-                document.getElementById('oxy-fav-status').innerHTML = `Trạng thái: ${st.message}`;
-                document.getElementById('oxy-fav-start').disabled = (st.status === 'locked');
+                const el = document.getElementById('oxy-fav-status');
+                if (el) el.innerHTML = `Trạng thái: ${st.message}`;
+                const btn = document.getElementById('oxy-fav-start');
+                if (btn) btn.disabled = (st.status === 'locked');
             }
             if (!state.cheartsRunning) {
                 const st = checkCheartsStatus();
-                document.getElementById('oxy-chearts-status').innerHTML = `Trạng thái: ${st.message}`;
-                document.getElementById('oxy-chearts-start').disabled = (st.status === 'locked');
+                const el = document.getElementById('oxy-chearts-status');
+                if (el) el.innerHTML = `Trạng thái: ${st.message}`;
+                const btn = document.getElementById('oxy-chearts-start');
+                if (btn) btn.disabled = (st.status === 'locked');
             }
         }, 5000);
 
@@ -1970,7 +1998,7 @@
     }
 
     // =============================================
-    // 9. MODIFY NAV (giữ nguyên)
+    // 9. MODIFY NAV
     // =============================================
     function modifyNav() {
         const termsLi = document.querySelector('li.nav-item a[data-target="#TermsModal"]')?.closest('li');
